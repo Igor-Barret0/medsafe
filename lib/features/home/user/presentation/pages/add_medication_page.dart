@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../../../../../core/constants/app_colors.dart';
+import '../../../../../core/services/notification_service.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../domain/medication.dart';
 
@@ -71,7 +72,7 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     final med = Medication(
@@ -97,6 +98,10 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
           ? widget.existingMedications[_selectedMedicationIndex].stockRemaining
           : null,
     );
+
+    await NotificationService.instance.scheduleMedicationReminder(med);
+
+    if (!mounted) return;
 
     if (_isEditMode) {
       Navigator.of(context).pop(
@@ -289,7 +294,7 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                     label: _isEditMode
                         ? 'Salvar alterações'
                         : 'Salvar medicamento',
-                    onTap: _save,
+                    onTap: () => _save(),
                   ),
                 ],
               ),
