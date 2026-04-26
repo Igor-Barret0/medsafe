@@ -7,6 +7,7 @@ import '../../../../../../core/constants/app_colors.dart';
 import '../../../../../../core/routes/app_routes.dart';
 import '../../../caregiver/presentation/pages/add_elderly_page.dart';
 import '../../../caregiver/presentation/pages/caregiver_elderly_management_page.dart';
+import '../../../caregiver/presentation/pages/caregiver_history_page.dart';
 import '../../../caregiver/presentation/state/caregiver_elderly_store.dart';
 import '../../../../../../core/widgets/edit_name_dialog.dart';
 import 'change_email_page.dart';
@@ -270,7 +271,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         _SettingsRow(
                           icon: Icons.manage_accounts_outlined,
                           iconColor: const Color(0xFFF97316),
-                          title: 'Gerenciar idosos',
+                          title: 'Gerenciar idosos cadastrados',
                           subtitle: '$activeCount idosos ativos',
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
@@ -302,8 +303,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 contact: result.contact,
                                 medicationCount: 0,
                                 lastActivity: 'Sem atividade ainda',
-                                caregiverName:
-                                    user?.name ?? 'Cuidador',
+                                caregiverName: user?.name ?? 'Cuidador',
                                 status: CaregiverElderlyStatus.active,
                               ),
                             );
@@ -424,8 +424,17 @@ class _SettingsPageState extends State<SettingsPage> {
         backgroundColor: AppColors.backgroundWhite,
         elevation: 12,
         onTap: (i) {
-          if (i == 0) context.go(AppRoutes.userHome);
-          if (i == 1) context.go(AppRoutes.history);
+          if (i == 0) {
+            context.go(isCaregiver ? AppRoutes.caregiverHome : AppRoutes.userHome);
+          }
+          if (i == 1) {
+            if (isCaregiver) {
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const CaregiverHistoryPage()));
+            } else {
+              context.go(AppRoutes.history);
+            }
+          }
         },
         items: const [
           BottomNavigationBarItem(

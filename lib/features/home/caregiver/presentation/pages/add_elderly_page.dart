@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../../core/constants/app_colors.dart';
-import '../../../../../../core/widgets/custom_button.dart';
-import '../../../../../../core/widgets/custom_text_field.dart';
+import '../../../../../core/constants/app_colors.dart';
+import '../../../../../core/widgets/custom_text_field.dart';
+import '../../../user/presentation/widgets/profile_edit_widgets.dart';
 
 class AddElderlyResult {
   final String name;
@@ -35,6 +35,24 @@ class _AddElderlyPageState extends State<AddElderlyPage> {
   final _notesController = TextEditingController();
 
   String _selectedSex = 'Masculino';
+  bool _saving = false;
+
+  bool get _canSave {
+    final name = _nameController.text.trim();
+    final age = int.tryParse(_ageController.text.trim());
+    final phone = _phoneController.text.trim();
+    return name.isNotEmpty && age != null && age > 0 && age <= 120 && phone.isNotEmpty;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController.addListener(_onChanged);
+    _ageController.addListener(_onChanged);
+    _phoneController.addListener(_onChanged);
+  }
+
+  void _onChanged() => setState(() {});
 
   @override
   void dispose() {
@@ -45,8 +63,11 @@ class _AddElderlyPageState extends State<AddElderlyPage> {
     super.dispose();
   }
 
-  void _saveElderly() {
+  Future<void> _saveElderly() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _saving = true);
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
 
     final result = AddElderlyResult(
       name: _nameController.text.trim(),
@@ -56,206 +77,209 @@ class _AddElderlyPageState extends State<AddElderlyPage> {
       notes: _notesController.text.trim(),
     );
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Idoso salvo com sucesso.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            SizedBox(width: 8),
+            Text('Idoso adicionado com sucesso!'),
+          ],
+        ),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
     Navigator.of(context).pop(result);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4FF),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
-              decoration: const BoxDecoration(
-                gradient: AppColors.headerGradient,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => Navigator.of(context).pop(),
-                      borderRadius: BorderRadius.circular(10),
-                      child: Ink(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(38),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: AppColors.textWhite,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Adicionar idoso',
-                          style: TextStyle(
-                            color: AppColors.textWhite,
-                            fontSize: 33,
-                            fontWeight: FontWeight.w700,
-                            height: 1.05,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Preencha os dados do idoso',
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
+      backgroundColor: AppColors.surface,
+      body: Column(
+        children: [
+          ProfileEditHeader(
+            title: 'Adicionar idoso',
+            subtitle: 'Preencha os dados do idoso',
+            icon: Icons.person_add_rounded,
+          ),
+          Expanded(
+            child: Form(
+              key: _formKey,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundWhite,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(10),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ProfileInfoCard(
+                      icon: Icons.info_outline_rounded,
+                      text:
+                          'Informe os dados básicos do idoso. Medicamentos e rotinas podem ser adicionados depois.',
+                    ),
+                    const SizedBox(height: 20),
+                    _SectionLabel(label: 'Informações pessoais'),
+                    const SizedBox(height: 10),
+                    ProfileFormCard(
                       children: [
                         CustomTextField(
                           label: 'Nome completo',
                           hint: 'Ex: Maria Oliveira',
                           controller: _nameController,
                           prefixIcon: const Icon(Icons.person_outline_rounded),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Informe o nome completo';
-                            }
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return 'Informe o nome completo';
                             return null;
                           },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                         CustomTextField(
                           label: 'Idade',
                           hint: 'Ex: 74',
                           keyboardType: TextInputType.number,
                           controller: _ageController,
-                          prefixIcon: const Icon(Icons.elderly_outlined),
-                          validator: (value) {
-                            final age = int.tryParse(value?.trim() ?? '');
-                            if (age == null || age <= 0 || age > 120) {
-                              return 'Informe uma idade válida';
-                            }
+                          prefixIcon: const Icon(Icons.cake_outlined),
+                          validator: (v) {
+                            final age = int.tryParse(v?.trim() ?? '');
+                            if (age == null || age <= 0 || age > 120) return 'Informe uma idade válida';
                             return null;
                           },
                         ),
-                        const SizedBox(height: 14),
-                        const Text(
-                          'Sexo',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF374151),
+                        const SizedBox(height: 16),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Sexo',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                              letterSpacing: 0.3,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Row(
                           children: [
                             _SexOption(
                               label: 'Masculino',
+                              icon: Icons.male_rounded,
                               selected: _selectedSex == 'Masculino',
-                              onTap: () =>
-                                  setState(() => _selectedSex = 'Masculino'),
+                              onTap: () => setState(() => _selectedSex = 'Masculino'),
                             ),
                             const SizedBox(width: 8),
                             _SexOption(
                               label: 'Feminino',
+                              icon: Icons.female_rounded,
                               selected: _selectedSex == 'Feminino',
-                              onTap: () =>
-                                  setState(() => _selectedSex = 'Feminino'),
+                              onTap: () => setState(() => _selectedSex = 'Feminino'),
                             ),
                             const SizedBox(width: 8),
                             _SexOption(
                               label: 'Outro',
+                              icon: Icons.people_outline_rounded,
                               selected: _selectedSex == 'Outro',
-                              onTap: () =>
-                                  setState(() => _selectedSex = 'Outro'),
+                              onTap: () => setState(() => _selectedSex = 'Outro'),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _SectionLabel(label: 'Contato e observações'),
+                    const SizedBox(height: 10),
+                    ProfileFormCard(
+                      children: [
                         CustomTextField(
-                          label: 'Telefone',
+                          label: 'Telefone de contato',
                           hint: '(11) 98765-4321',
                           keyboardType: TextInputType.phone,
                           controller: _phoneController,
                           prefixIcon: const Icon(Icons.phone_iphone_outlined),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Informe o telefone';
-                            }
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return 'Informe o telefone';
                             return null;
                           },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                         CustomTextField(
                           label: 'Observações médicas',
-                          hint: 'Ex: Hipertensão, diabetes tipo 2...',
+                          hint: 'Ex: Hipertensão, diabetes tipo 2, alergias...',
                           controller: _notesController,
                           maxLines: 3,
                           textInputAction: TextInputAction.newline,
                         ),
-                        const SizedBox(height: 18),
-                        PrimaryButton(
-                          label: 'Salvar idoso',
-                          onPressed: _saveElderly,
-                        ),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ProfileSaveButton(
+                        label: 'Salvar idoso',
+                        enabled: _canSave,
+                        isLoading: _saving,
+                        onPressed: _saveElderly,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ProfileCancelButton(onPressed: () => Navigator.of(context).pop()),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
+// ── Section label ─────────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: 14,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textSecondary,
+            letterSpacing: 1.1,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Sex option chip ───────────────────────────────────────────────────────────
+
 class _SexOption extends StatelessWidget {
   final String label;
+  final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
   const _SexOption({
     required this.label,
+    required this.icon,
     required this.selected,
     required this.onTap,
   });
@@ -263,23 +287,53 @@ class _SexOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: InkWell(
+      child: GestureDetector(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          height: 38,
-          alignment: Alignment.center,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: 60,
           decoration: BoxDecoration(
-            color: selected ? AppColors.primary : const Color(0xFFE8ECF3),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: selected ? AppColors.textWhite : const Color(0xFF64748B),
+            gradient: selected
+                ? const LinearGradient(
+                    colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: selected ? null : const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? Colors.transparent : const Color(0xFFE2E8F0),
+              width: 1.5,
             ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withAlpha(60),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: selected ? Colors.white : const Color(0xFF94A3B8),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? Colors.white : const Color(0xFF64748B),
+                ),
+              ),
+            ],
           ),
         ),
       ),
